@@ -1,0 +1,27 @@
+Table Aeroporto {
+    id Integer [pk]
+}
+
+Table Aviao {
+    id Integer [pk]
+    combustivel Integer
+    operacao Operacao
+}
+
+Table Pista {
+    id Integer [pk]
+    aeroporto Integer
+    permiteAterrisagem Boolean
+}
+
+Table Prateleira {
+    id Integer [pk]
+    pista_id Integer
+}
+
+Table Avioes {
+    aeroporto_id Integer
+    pista_id Integer
+    prateleira_id Integer
+    aviao_id Integer
+}
