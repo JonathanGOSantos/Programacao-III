@@ -3,9 +3,5 @@
         "src/main",
         "src/test"
     ],
-    "java.project.outputPath": "bin",
-    "java.project.referencedLibraries": [
-        "/home/jonathan/estudos/Programacao III/TP1 - Aeroporto/lib/junit-platform-console-standalone-1.13.0-M3.jar",
-        "lib/junit-platform-console-standalone-1.13.0-M3.jar"
-    ]
+    "java.project.outputPath": "bin"
 }
