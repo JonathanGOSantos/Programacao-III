@@ -1,123 +1,139 @@
 package aeroporto.simulacao;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import aeroporto.enums.Estagio;
 import aeroporto.enums.Operacao;
 
 /**
- * Classe responsável por gerenciar e calcular estatísticas da simulação,
- * incluindo tempo médio de espera e quantidade de aviões em situação crítica.
+ * Gerencia e consolida as métricas e estatísticas da simulação do aeroporto.
+ * Calcula dados como tempo médio de espera e quantidade de pousos emergenciais,
+ * utilizando estruturas de dados otimizadas para processamento em tempo real
+ * O(1).
  */
 public class Estatisticas {
   private Map<Integer, List<Registro>> registros;
 
+  private Map<Integer, Integer> tempoInicioPorAviao;
+
+  private Long totalAvioesDecolagem;
+  private Long totalAvioesPouso;
+  private Long tempoTotalParaPouso;
+  private Long tempoTotalParaDecolagem;
+  private Long totalAvioesPousaramSemCombustivel;
+
   /**
-   * Construtor de Estatísticas.
+   * Construtor padrão da classe Estatísticas.
+   * Inicializa os mapas de histórico e zera todos os contadores de métricas.
    */
   public Estatisticas() {
     this.registros = new TreeMap<>();
+    this.tempoInicioPorAviao = new HashMap<>();
+
+    totalAvioesPouso = 0L;
+    totalAvioesDecolagem = 0L;
+    tempoTotalParaPouso = 0L;
+    tempoTotalParaDecolagem = 0L;
+    totalAvioesPousaramSemCombustivel = 0L;
   }
 
   /**
-   * Adiciona um novo registro ao histórico.
+   * Processa e armazena um novo registro da simulação.
+   * Acumula o tempo de operação e atualiza as contagens gerais de decolagens e
+   * pousos no momento exato em que o registro é inserido, evitando cálculos
+   * pesados posteriores.
    *
-   * @param registro O registro contendo os dados do evento.
+   * @param registro O evento/registro a ser processado e adicionado ao histórico.
    */
   public void novoRegistro(Registro registro) {
     registros.putIfAbsent(registro.instante(), new ArrayList<>());
     registros.get(registro.instante()).add(registro);
+
+    if (registro.estagio() == Estagio.INICIOU) {
+      tempoInicioPorAviao.put(registro.idAviao(), registro.instante());
+
+      if (registro.operacao() == Operacao.DECOLAGEM) {
+        totalAvioesDecolagem++;
+      } else if (registro.operacao() == Operacao.POUSO) {
+        totalAvioesPouso++;
+      }
+    } else if (registro.estagio() == Estagio.FINALIZOU) {
+      Integer instanteInicio = tempoInicioPorAviao.remove(registro.idAviao());
+      int tempoDecorrido = registro.instante() - instanteInicio;
+
+      if (registro.operacao() == Operacao.DECOLAGEM) {
+        tempoTotalParaDecolagem += tempoDecorrido;
+      } else if (registro.operacao() == Operacao.POUSO) {
+        tempoTotalParaPouso += tempoDecorrido;
+
+        if (registro.combustivel() == 0) {
+          totalAvioesPousaramSemCombustivel++;
+        }
+      }
+    }
   }
 
+  /**
+   * Recupera o histórico completo de todos os registros da simulação,
+   * ordenados cronologicamente pelo instante de ocorrência.
+   *
+   * @return Uma lista unificada contendo todos os registros.
+   */
   public List<Registro> getRegistros() {
     return registros.values().stream().flatMap(List::stream).collect(Collectors.toList());
   }
 
+  /**
+   * Recupera a lista de eventos e registros que ocorreram em um instante de tempo
+   * específico.
+   *
+   * @param instante O momento exato (unidade de tempo) da simulação.
+   * @return Uma lista de registros daquele instante, ou uma lista vazia se não
+   *         houver eventos.
+   */
   public List<Registro> getRegistrosEm(Integer instante) {
     return registros.getOrDefault(instante, new ArrayList<>());
   }
 
   /**
-   * Calcula o tempo médio de espera para todas as operações de pouso concluídas.
+   * Calcula o tempo médio geral de espera das aeronaves nas filas de solo para
+   * decolar.
    *
-   * @return Tempo médio (em unidades de tempo), ou 0.0 se não houver pousos.
-   */
-  public Double tempoMedioDePouso() {
-    List<Registro> registrosPouso = getRegistros().stream()
-        .filter(r -> r.operacao() == Operacao.POUSO)
-        .toList();
-
-    Map<Integer, List<Registro>> historicoPorAviao = registrosPouso.stream()
-        .collect(Collectors.groupingBy(Registro::idAviao));
-
-    return historicoPorAviao.values().stream()
-        .filter(historico -> historico.size() >= 2)
-        .mapToInt(historico -> {
-          int inicio = historico.stream().mapToInt(Registro::instante).min().orElse(0);
-          int fim = historico.stream().mapToInt(Registro::instante).max().orElse(0);
-          return fim - inicio;
-        })
-        .average()
-        .orElse(0.0);
-  }
-
-  /**
-   * Calcula o tempo médio de espera para todas as operações de decolagem concluídas.
-   *
-   * @return Tempo médio (em unidades de tempo), ou 0.0 se não houver decolagens.
+   * @return O tempo médio de espera para decolagens em unidades de tempo. Retorna
+   *         0.0 se nenhuma decolagem for registrada.
    */
   public Double tempoMedioDeDecolagem() {
-    List<Registro> registrosPouso = getRegistros().stream()
-        .filter(r -> r.operacao() == Operacao.DECOLAGEM)
-        .toList();
-
-    Map<Integer, List<Registro>> historicoPorAviao = registrosPouso.stream()
-        .collect(Collectors.groupingBy(Registro::idAviao));
-
-    return historicoPorAviao.values().stream()
-        .filter(historico -> historico.size() >= 2)
-        .mapToInt(historico -> {
-          int inicio = historico.stream().mapToInt(Registro::instante).min().orElse(0);
-          int fim = historico.stream().mapToInt(Registro::instante).max().orElse(0);
-          return fim - inicio;
-        })
-        .average()
-        .orElse(0.0);
+    if (totalAvioesDecolagem.compareTo(0L) == 0L)
+      return 0.0;
+    return tempoTotalParaDecolagem / totalAvioesDecolagem.doubleValue();
   }
 
   /**
-   * Calcula o tempo total de operação de um determinado avião.
+   * Calcula o tempo médio geral de espera das aeronaves para realizar operações
+   * de aterrissagem.
    *
-   * @param idAviao O identificador do avião.
-   * @return O tempo total decorrido entre a entrada e a saída do avião.
+   * @return O tempo médio de espera para pousos em unidades de tempo. Retorna 0.0
+   *         se nenhum pouso for registrado.
    */
-  public Integer tempoDeOperacao(Integer idAviao) {
-    List<Registro> registros = getRegistros().stream().filter(r -> r.idAviao().equals(idAviao)).toList();
-    if (registros.isEmpty()) return 0;
-    Registro inicio = registros.getFirst();
-    if (registros.size() == 1) {
-      return 0;
-    }
-
-    Registro fim = registros.getLast();
-    return fim.instante() - inicio.instante();
+  public Double tempoMedioDePouso() {
+    if (totalAvioesPouso.compareTo(0L) == 0L)
+      return 0.0;
+    return tempoTotalParaPouso / totalAvioesPouso.doubleValue();
   }
 
   /**
-   * Conta a quantidade total de aviões que chegaram à situação de ausência de combustível
-   * em qualquer momento da simulação.
+   * Informa a quantidade total de aeronaves que atingiram o nível zero de
+   * combustível e pousaram sob condições de emergência durante todo o período da
+   * simulação.
    *
-   * @return O número de aviões sem combustível.
+   * @return O número de aviões que aterrissaram sem reserva de combustível.
    */
   public Long avioesSemCombustivel() {
-    return registros.values().stream()
-        .flatMap(List::stream)
-        .filter(r -> r.combustivel() == 0)
-        .map(Registro::idAviao)
-        .distinct()
-        .count();
+    return totalAvioesPousaramSemCombustivel;
   }
 }

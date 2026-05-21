@@ -122,7 +122,7 @@ public class TorreDeControle {
   /**
    * Processa a alocação das pistas na unidade de tempo atual.
    * Libera as pistas usadas anteriormente, aloca pistas para emergências,
-   * aloca pistas normais e atualiza o tempo de espera nas filas.
+   * aloca pistas para usos normais e atualiza o tempo de espera nas filas.
    */
   public void processarPistas() {
     pistas.values().forEach(Pista::liberar);
@@ -242,25 +242,22 @@ public class TorreDeControle {
     System.out.println("===============================================================");
     System.out.println("UNIDADE DE TEMPO: " + instante);
     System.out.println("\nConteúdo de cada fila:");
-    for (int i = 1; i <= 4; i++) {
-      Prateleira p = prateleirasDePouso.get(i);
-      String avioesStr = p.getAvioes().stream()
+    for (Map.Entry<Integer, Prateleira> entry : prateleirasDePouso.entrySet()) {
+      String avioesStr = entry.getValue().getAvioes().stream()
           .map(a -> String.format("ID: %d (Comb: %d)", a.getId(), a.getCombustivel()))
           .toList().toString();
-      System.out.println("- Fila de aterrissagem " + i + ": " + avioesStr);
+      System.out.println("- Fila de aterrissagem " + entry.getKey() + ": " + avioesStr);
     }
-    for (int i = 1; i <= 3; i++) {
-      Prateleira p = prateleirasDeDecolagem.get(i);
-      String avioesStr = p.getAvioes().stream()
+    for (Map.Entry<Integer, Prateleira> entry : prateleirasDeDecolagem.entrySet()) {
+      String avioesStr = entry.getValue().getAvioes().stream()
           .map(a -> String.format("ID: %d (Comb: %d)", a.getId(), a.getCombustivel()))
           .toList().toString();
-      System.out.println("- Fila de decolagem " + i + ": " + avioesStr);
+      System.out.println("- Fila de decolagem " + entry.getKey() + ": " + avioesStr);
     }
 
     System.out.println("\nEstatísticas Periódicas:");
     System.out.printf("- Tempo médio de espera para decolagem: %.2f%n", estatisticas.tempoMedioDeDecolagem());
     System.out.printf("- Tempo médio de espera para aterrissagem: %.2f%n", estatisticas.tempoMedioDePouso());
     System.out.println("- Número de aviões que aterrissam sem reserva de combustível: " + estatisticas.avioesSemCombustivel());
-    System.out.println("===============================================================");
   }
 }

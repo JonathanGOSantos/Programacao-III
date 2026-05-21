@@ -32,13 +32,13 @@ public class Aeroporto {
     Integer qtdAvioesDecolar = random.nextInt(4);
 
     for (int i = 0; i < qtdAvioesPousar; i++) {
-      Integer combustivel = random.nextInt(30) + 1;
+      Integer combustivel = random.nextInt(20) + 1;
       Aviao aviao = new Aviao(contadorIdAviao++, combustivel, Operacao.POUSO);
       torreDeControle.processarAviao(aviao);
     }
 
     for (int i = 0; i < qtdAvioesDecolar; i++) {
-      Integer combustivel = random.nextInt(30) + 1;
+      Integer combustivel = random.nextInt(20) + 1;
       Aviao aviao = new Aviao(contadorIdAviao++, combustivel, Operacao.DECOLAGEM);
       torreDeControle.processarAviao(aviao);
     }
