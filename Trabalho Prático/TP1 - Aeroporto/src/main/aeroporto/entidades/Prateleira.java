@@ -4,11 +4,6 @@ import java.util.Optional;
 
 import aeroporto.enums.Operacao;
 
-/**
- * Representa uma prateleira (ou fila) de espera para aviões no aeroporto.
- * Esta fila gerencia os aviões que estão aguardando autorização para
- * realizar uma operação específica, como pouso ou decolagem.
- */
 public class Prateleira {
   private int tamanho;
   private Node cabeca;
@@ -17,13 +12,6 @@ public class Prateleira {
   private final Integer id;
   private Operacao operacaoPermitida;
 
-  /**
-   * Construtor da Prateleira de Espera.
-   * 
-   * @param id                O identificador da prateleira.
-   * @param operacaoPermitida O tipo de operação que os aviões desta
-   *                          prateleira estão aguardando para realizar.
-   */
   public Prateleira(Integer id, Operacao operacaoPermitida) {
     this.id = id;
     this.operacaoPermitida = operacaoPermitida;

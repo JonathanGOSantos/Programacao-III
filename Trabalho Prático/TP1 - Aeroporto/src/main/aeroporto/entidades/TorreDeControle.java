@@ -4,11 +4,7 @@ import aeroporto.enums.Estagio;
 import aeroporto.enums.Operacao;
 import aeroporto.simulacao.Estatisticas;
 
-/**
- * Classe responsável por gerenciar todo o tráfego do aeroporto.
- * Controla as pistas, as prateleiras de espera e direciona os aviões
- * para decolagem, pouso ou situações de emergência.
- */
+
 public class TorreDeControle {
   private Integer instante;
   private Estatisticas estatisticas;
@@ -20,10 +16,6 @@ public class TorreDeControle {
   private Prateleira[] prateleirasDeDecolagem;
   private Prateleira[] prateleirasDePouso;
 
-  /**
-   * Inicializa a torre de controle, criando e populando as pistas
-   * e as prateleiras de pouso e decolagem.
-   */
   public TorreDeControle() {
     this.instante = 1;
     estatisticas = new Estatisticas();
@@ -66,12 +58,6 @@ public class TorreDeControle {
     prateleirasDePouso[3] = new Prateleira(4, Operacao.POUSO);
   }
 
-  /**
-   * Processa a chegada de um novo avião no espaço aéreo ou pátio,
-   * direcionando-o para a fila correta com base na sua operação.
-   *
-   * @param aviao O avião a ser processado.
-   */
   public void processarAviao(Aviao aviao) {
     switch (aviao.getOperacao()) {
       case DECOLAGEM -> {
@@ -125,11 +111,6 @@ public class TorreDeControle {
     }
   }
 
-  /**
-   * Processa a alocação das pistas na unidade de tempo atual.
-   * Libera as pistas usadas anteriormente, aloca pistas para emergências,
-   * aloca pistas para usos normais e atualiza o tempo de espera nas filas.
-   */
   public void processarPistas() {
     for (Pista pista : pistas) {
       pista.liberar();
@@ -235,17 +216,10 @@ public class TorreDeControle {
     return instante;
   }
 
-  /**
-   * Avança uma unidade de tempo no relógio interno da Torre de Controle.
-   */
   public void passarTempo() {
     instante++;
   }
 
-  /**
-   * Imprime um relatório completo contendo o estado atual das filas
-   * de aterrissagem e decolagem, além de estatísticas acumuladas.
-   */
   public void imprimirRelatorio() {
     System.out.println("\nConteúdo de cada fila:");
     
