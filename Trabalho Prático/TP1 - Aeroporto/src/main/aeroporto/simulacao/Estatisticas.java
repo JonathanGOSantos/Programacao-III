@@ -1,26 +1,15 @@
 package aeroporto.simulacao;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
+import aeroporto.entidades.Aviao;
 import aeroporto.enums.Estagio;
 import aeroporto.enums.Operacao;
 
 /**
  * Gerencia e consolida as métricas e estatísticas da simulação do aeroporto.
  * Calcula dados como tempo médio de espera e quantidade de pousos emergenciais,
- * utilizando estruturas de dados otimizadas para processamento em tempo real
- * O(1).
+ * utilizando estruturas de dados otimizadas para processamento em tempo real.
  */
 public class Estatisticas {
-  private Map<Integer, List<Registro>> registros;
-
-  private Map<Integer, Integer> tempoInicioPorAviao;
-
   private Long totalAvioesDecolagem;
   private Long totalAvioesPouso;
   private Long tempoTotalParaPouso;
@@ -32,9 +21,6 @@ public class Estatisticas {
    * Inicializa os mapas de histórico e zera todos os contadores de métricas.
    */
   public Estatisticas() {
-    this.registros = new TreeMap<>();
-    this.tempoInicioPorAviao = new HashMap<>();
-
     totalAvioesPouso = 0L;
     totalAvioesDecolagem = 0L;
     tempoTotalParaPouso = 0L;
@@ -50,54 +36,50 @@ public class Estatisticas {
    *
    * @param registro O evento/registro a ser processado e adicionado ao histórico.
    */
-  public void novoRegistro(Registro registro) {
-    registros.putIfAbsent(registro.instante(), new ArrayList<>());
-    registros.get(registro.instante()).add(registro);
+  public void novoRegistro(Integer instante, Aviao aviao, Estagio estagio, Operacao operacao,
+      Integer pista, Integer prateleira) {
+    Registro registro = new Registro(instante, aviao.getId(), aviao.getCombustivel(), estagio, operacao, pista,
+        prateleira);
 
     if (registro.estagio() == Estagio.INICIOU) {
-      tempoInicioPorAviao.put(registro.idAviao(), registro.instante());
-
       if (registro.operacao() == Operacao.DECOLAGEM) {
         totalAvioesDecolagem++;
       } else if (registro.operacao() == Operacao.POUSO) {
         totalAvioesPouso++;
       }
     } else if (registro.estagio() == Estagio.FINALIZOU) {
-      Integer instanteInicio = tempoInicioPorAviao.remove(registro.idAviao());
-      int tempoDecorrido = registro.instante() - instanteInicio;
 
       if (registro.operacao() == Operacao.DECOLAGEM) {
-        tempoTotalParaDecolagem += tempoDecorrido;
+        tempoTotalParaDecolagem += aviao.getTempoDeOperacao();
       } else if (registro.operacao() == Operacao.POUSO) {
-        tempoTotalParaPouso += tempoDecorrido;
-
+        tempoTotalParaPouso += aviao.getTempoDeOperacao();
         if (registro.combustivel() == 0) {
           totalAvioesPousaramSemCombustivel++;
         }
       }
     }
-  }
+    
+    if (estagio == Estagio.CAIU) {
+      System.out.printf("- [ALERTA] Avião %d CAIU por falta de combustível na prateleira %d (Pista %d)!\n", 
+          aviao.getId(), prateleira, pista);
+      return;
+    }
 
-  /**
-   * Recupera o histórico completo de todos os registros da simulação,
-   * ordenados cronologicamente pelo instante de ocorrência.
-   *
-   * @return Uma lista unificada contendo todos os registros.
-   */
-  public List<Registro> getRegistros() {
-    return registros.values().stream().flatMap(List::stream).collect(Collectors.toList());
-  }
+    String fraseAcao = switch (estagio) {
+      case INICIOU -> (operacao == Operacao.POUSO) 
+          ? "chegou para pousar e entrou em órbita na prateleira" 
+          : "entrou na fila de espera para decolar na prateleira";
+          
+      case FINALIZOU -> (operacao == Operacao.POUSO) 
+          ? "pousou com sucesso a partir da prateleira" 
+          : "decolou com sucesso a partir da prateleira";
+          
+      default -> "";
+    };
 
-  /**
-   * Recupera a lista de eventos e registros que ocorreram em um instante de tempo
-   * específico.
-   *
-   * @param instante O momento exato (unidade de tempo) da simulação.
-   * @return Uma lista de registros daquele instante, ou uma lista vazia se não
-   *         houver eventos.
-   */
-  public List<Registro> getRegistrosEm(Integer instante) {
-    return registros.getOrDefault(instante, new ArrayList<>());
+    // 3. Print final com a gramática e a semântica da aviação perfeitas
+    System.out.printf("- Avião %d %s %d da pista %d com %d un. de combustível.\n", 
+        aviao.getId(), fraseAcao, prateleira, pista, aviao.getCombustivel());
   }
 
   /**

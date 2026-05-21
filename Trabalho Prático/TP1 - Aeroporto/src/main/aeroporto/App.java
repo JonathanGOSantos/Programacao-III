@@ -16,9 +16,10 @@ public class App {
   public static void main(String[] args) {
     try {
       Aeroporto aeroporto = new Aeroporto();
-      while (true) {
+      int i = 0;
+      while (i++ < 25) {
         aeroporto.passarTempo();
-        Thread.sleep(1000);
+        Thread.sleep(100);
       }
     } catch (Exception e) {
       e.printStackTrace();

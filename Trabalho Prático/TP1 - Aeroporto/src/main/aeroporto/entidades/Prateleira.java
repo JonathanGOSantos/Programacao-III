@@ -1,9 +1,6 @@
 package aeroporto.entidades;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
 
 import aeroporto.enums.Operacao;
 
@@ -13,126 +10,168 @@ import aeroporto.enums.Operacao;
  * realizar uma operação específica, como pouso ou decolagem.
  */
 public class Prateleira {
-  private final Integer id; 
-  private Queue<Aviao> avioes;
+  private int tamanho;
+  private Node cabeca;
+  private Node cauda;
+
+  private final Integer id;
   private Operacao operacaoPermitida;
 
   /**
    * Construtor da Prateleira de Espera.
    * 
-   * @param id O identificador da prateleira.
+   * @param id                O identificador da prateleira.
    * @param operacaoPermitida O tipo de operação que os aviões desta
    *                          prateleira estão aguardando para realizar.
    */
   public Prateleira(Integer id, Operacao operacaoPermitida) {
     this.id = id;
-    this.avioes = new LinkedList<>();
     this.operacaoPermitida = operacaoPermitida;
+    this.tamanho = 0;
   }
 
-  /**
-   * Adiciona um avião ao final da fila de espera
-   * 
-   * @param aviao O avião a ser adicionado na prateleira.
-   */
-  public void adicionarAviao(Aviao aviao) {
-    avioes.add(aviao);
+  public boolean isVazia() {
+    return tamanho == 0;
   }
 
-  /**
-   * Visualiza o primeiro avião da fila sem removê-lo.
-   * 
-   * @return Um {@link Optional} contendo o primeiro {@link Aviao} da fila, ou
-   *         vazio se a fila estiver vazia.
-   */
-  public Optional<Aviao> verPrimeiroAviao() {
-    return Optional.ofNullable(avioes.peek());
+  public boolean remover(Aviao aviao) {
+    Node node = cabeca;
+    while (node != null) {
+      if (node.aviao.equals(aviao)) {
+        if (node == cabeca) {
+          cabeca = node.next;
+        } else {
+          node.prev.next = node.next;
+        }
+
+        if (node == cauda) {
+          cauda = node.prev;
+        } else {
+          node.next.prev = node.prev;
+        }
+
+        tamanho--;
+        return true;
+      }
+      node = node.next;
+    }
+    return false;
   }
 
-  /**
-   * Obtém o ID do próximo avião da fila (o que tem maior prioridade para sair).
-   * 
-   * @return Um Optional contendo o ID do avião, ou Optional.empty() se a fila
-   *         estiver vazia.
-   */
-  public Optional<Integer> getIdProximoAviao() {
-    return verPrimeiroAviao().map(Aviao::getId);
+  public int tamanho() {
+    return tamanho;
   }
 
-  /**
-   * Remove e retorna o primeiro avião da fila de espera.
-   * 
-   * @return Um {@link Optional} contendo o primeiro {@link Aviao} da fila, ou
-   *         vazio se a fila estiver vazia.
-   */
+  public void adicionar(Aviao aviao) {
+    if (cabeca == null) {
+      Node node = new Node(null, aviao, null);
+      cabeca = node;
+      cauda = node;
+    } else {
+      Node newNode = new Node(cauda, aviao, null);
+      cauda.next = newNode;
+      cauda = newNode;
+    }
+    tamanho++;
+  }
+
+  public Optional<Aviao> verProximoAviao() {
+    if (cabeca == null) {
+      return Optional.empty();
+    }
+    return Optional.of(cabeca.aviao);
+  }
+
   public Optional<Aviao> removerPrimeiroAviao() {
-    return Optional.ofNullable(avioes.poll());
+    if (cabeca == null)
+      return Optional.empty();
+
+    tamanho--;
+
+    if (cabeca == cauda) {
+      Aviao aviao = cabeca.aviao;
+      cabeca = null;
+      cauda = null;
+      return Optional.of(aviao);
+    }
+
+    Aviao aviao = cabeca.aviao;
+    Node next = cabeca.next;
+    cabeca.next = null;
+    next.prev = null;
+    cabeca = next;
+    return Optional.of(aviao);
   }
 
-  /**
-   * Remove um avião específico da fila, independentemente de sua posição.
-   * 
-   * @param aviao O avião a ser removido.
-   */
-  public void removerAviao(Aviao aviao) {
-    avioes.remove(aviao);
+  public Aviao[] obterEmergencias() {
+    Aviao[] temporario = new Aviao[tamanho];
+    Node node = cabeca;
+    int qtdEmergencias = 0;
+
+    while (node != null) {
+      if (node.aviao.emSituacaoCritica()) {
+        temporario[qtdEmergencias] = node.aviao;
+        qtdEmergencias++;
+      }
+      node = node.next;
+    }
+
+    if (qtdEmergencias == 0) {
+      return new Aviao[0];
+    }
+
+    Aviao[] resultado = new Aviao[qtdEmergencias];
+
+    for (int j = 0; j < qtdEmergencias; j++) {
+      resultado[j] = temporario[j];
+    }
+
+    return resultado;
   }
 
-  /**
-   * Filtra e retorna todos os aviões desta prateleira que se encontram
-   * em situação de emergência.
-   * 
-   * @return Uma lista contendo os aviões em situação crítica.
-   */
-  public List<Aviao> obterEmergencias() {
-    return avioes.stream().filter(Aviao::emSituacaoCritica).toList();
-  }
-
-  /**
-   * Obtém a quantidade atual de aviões aguardando nesta prateleira.
-   * 
-   * @return O número de aviões na fila.
-   */
-  public Integer getTamanho() {
-    return avioes.size();
-  }
-
-  /**
-   * Verifica se a prateleira de espera está vazia.
-   * 
-   * @return true se não houver aviões na fila, false caso contrário.
-   */
-  public Boolean isVazia() {
-    return avioes.isEmpty();
-  }
-
-  /**
-   * Obtém qual é a operação permitida para os aviões desta prateleira.
-   * 
-   * @return A {@link Operacao} vinculada a esta prateleira.
-   */
-  public Operacao getOperacaoPermitida() {
-    return operacaoPermitida;
+  public void atualizarTempoDeEspera() {
+    Node node = cabeca;
+    while (node != null) {
+      node.aviao.decrementarCombustivel();
+      node.aviao.incrementarTempoDeOperacao();
+      node = node.next;
+    }
   }
 
   public Integer getId() {
     return id;
   }
 
-  /**
-   * Atualiza o tempo de espera de todos os aviões presentes nesta fila,
-   * decrementando o combustível de cada um.
-   */
-  public void atualizarTempoDeEspera() {
-    avioes.forEach(Aviao::decrementarCombustivel);
+  public Operacao getOperacaoPermitida() {
+    return operacaoPermitida;
   }
 
-  /**
-   * Retorna uma lista contendo todos os aviões atualmente aguardando nesta prateleira.
-   *
-   * @return Lista de aviões.
-   */
-  public List<Aviao> getAvioes() {
-    return new java.util.ArrayList<>(avioes);
+  public String formatarFila() {
+    StringBuilder sb = new StringBuilder("[");
+    Node atual = cabeca;
+
+    while (atual != null) {
+      sb.append(String.format("ID: %d (Comb: %d)", atual.aviao.getId(), atual.aviao.getCombustivel()));
+
+      if (atual.next != null) {
+        sb.append(", ");
+      }
+      atual = atual.next;
+    }
+
+    sb.append("]");
+    return sb.toString();
+  }
+
+  private static class Node {
+    Node prev;
+    Aviao aviao;
+    Node next;
+
+    public Node(Node prev, Aviao aviao, Node next) {
+      this.prev = prev;
+      this.aviao = aviao;
+      this.next = next;
+    }
   }
 }

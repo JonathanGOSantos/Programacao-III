@@ -28,6 +28,7 @@ public class Aeroporto {
    * solicita processamento pela torre de controle e imprime o relatório atual.
    */
   public void passarTempo() {
+    System.out.println("Instante: " + torreDeControle.getInstante());
     Integer qtdAvioesPousar = random.nextInt(4);
     Integer qtdAvioesDecolar = random.nextInt(4);
 
@@ -46,5 +47,7 @@ public class Aeroporto {
     torreDeControle.processarPistas();
     torreDeControle.imprimirRelatorio();
     torreDeControle.passarTempo();
+    System.out.println("========================");
+    System.out.println();
   }
 }
